@@ -1,0 +1,86 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Capability for the main window",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:default",
+    "opener:default",
+    "shell:default",
+    "fs:allow-app-meta",
+    "fs:allow-app-meta-recursive",
+    "fs:allow-app-read-recursive",
+    "fs:allow-appconfig-read-recursive",
+    "fs:allow-home-read",
+    "fs:allow-home-read-recursive",
+    "fs:allow-home-write",
+    "fs:allow-home-write-recursive",
+    "fs:allow-copy-file",
+    "fs:allow-read",
+    "fs:allow-write",
+    "fs:allow-create",
+    "fs:default",
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "name": "exec-sh",
+          "cmd": "sh",
+          "args": true,
+          "sidecar": false
+        },
+        {
+          "name": "mkdir",
+          "cmd": "mkdir",
+          "args": true,
+          "sidecar": false
+        },
+        {
+          "name": "touch",
+          "cmd": "touch",
+          "args": true,
+          "sidecar": false
+        },
+        {
+          "name": "cp",
+          "cmd": "cp",
+          "args": true,
+          "sidecar": false
+        },
+        {
+          "name": "chmod",
+          "cmd": "chmod",
+          "args": true,
+          "sidecar": false
+        },
+        {
+          "name": "sed",
+          "cmd": "sed",
+          "args": true,
+          "sidecar": false
+        },
+        {
+          "name": "docker-compose",
+          "cmd": "docker-compose",
+          "args": true,
+          "sidecar": false
+        },
+        {
+          "name": "docker",
+          "cmd": "docker",
+          "args": true,
+          "sidecar": false
+        },
+        {
+          "name": "lsof",
+          "cmd": "lsof",
+          "args": true,
+          "sidecar": false
+        }
+      ]
+    },
+    "os:default"
+  ]
+}
