@@ -13,8 +13,31 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { Button } from "./ui/button"
+import { useEffect, useState } from "react"
+import { get_benches_information, get_default_benches_dir } from "@/actions/helper-functions"
+import { BenchInformation } from "@/actions/types"
+import { CreateBenchDialog } from "./actions/create-bench-dialog"
+import { Outlet } from "react-router"
+
+
+
 
 export default function Layout() {
+  const [benches, setBenches] = useState<BenchInformation[]>([]);
+  useEffect(() => {
+    const fetchFolders = async () => {
+      const default_path = await get_default_benches_dir();
+      const benches_information = await get_benches_information([default_path]);
+      setBenches(benches_information);
+    }
+    fetchFolders();
+
+    return () => {
+      console.log("Cleanup");
+    }
+  }, []);
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -41,14 +64,9 @@ export default function Layout() {
             </Breadcrumb>
           </div>
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-            <div className="bg-muted/50 aspect-video rounded-xl" />
-            <div className="bg-muted/50 aspect-video rounded-xl" />
-            <div className="bg-muted/50 aspect-video rounded-xl" />
-          </div>
-          <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min" />
-        </div>
+        <main className="flex flex-col flex-1">
+          <Outlet />
+        </main>
       </SidebarInset>
     </SidebarProvider>
   )

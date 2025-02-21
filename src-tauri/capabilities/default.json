@@ -8,6 +8,7 @@
   "permissions": [
     "core:default",
     "opener:default",
+    "os:default",
     "shell:default",
     "fs:allow-app-meta",
     "fs:allow-app-meta-recursive",
@@ -28,59 +29,49 @@
         {
           "name": "exec-sh",
           "cmd": "sh",
-          "args": true,
-          "sidecar": false
+          "args": true
         },
         {
           "name": "mkdir",
           "cmd": "mkdir",
-          "args": true,
-          "sidecar": false
+          "args": true
         },
         {
           "name": "touch",
           "cmd": "touch",
-          "args": true,
-          "sidecar": false
+          "args": true
         },
         {
           "name": "cp",
           "cmd": "cp",
-          "args": true,
-          "sidecar": false
+          "args": true
         },
         {
           "name": "chmod",
           "cmd": "chmod",
-          "args": true,
-          "sidecar": false
+          "args": true
         },
         {
           "name": "sed",
           "cmd": "sed",
-          "args": true,
-          "sidecar": false
+          "args": true
         },
         {
           "name": "docker-compose",
           "cmd": "docker-compose",
-          "args": true,
-          "sidecar": false
+          "args": true
         },
         {
           "name": "docker",
           "cmd": "docker",
-          "args": true,
-          "sidecar": false
+          "args": true
         },
         {
           "name": "lsof",
           "cmd": "lsof",
-          "args": true,
-          "sidecar": false
+          "args": true
         }
       ]
-    },
-    "os:default"
+    }
   ]
 }

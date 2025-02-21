@@ -78,6 +78,25 @@ fn open_bench_terminal() {
         .expect("failed to execute process");
 }
 
+#[tauri::command]
+fn get_benches_list() -> Vec<String> {
+    // Go to the user home directory /benches and list all the directories
+    // Return the list of directories
+    let mut benches: Vec<String> = Vec::new();
+    let output = Command::new("ls")
+        .arg("-d")
+        .arg("/benches/*")
+        .output()
+        .expect("failed to execute process");
+
+    let output = String::from_utf8_lossy(&output.stdout);
+    for line in output.lines() {
+        benches.push(line.to_string());
+    }
+
+    benches
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -85,7 +104,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, init_bench, find_unused_ports, open_folder_in_vscode, open_bench_terminal])
+        .invoke_handler(tauri::generate_handler![greet, init_bench, find_unused_ports, open_folder_in_vscode, open_bench_terminal, get_benches_list])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

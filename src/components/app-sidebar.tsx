@@ -117,19 +117,19 @@ const data = {
   ],
   projects: [
     {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
+      name: "Benches",
+      url: "/benches",
+      icon: SquareTerminal,
     },
     {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
+      name: "Models",
+      url: "/models",
+      icon: Bot,
     },
     {
-      name: "Travel",
-      url: "#",
-      icon: Map,
+      name: "Settings",
+      url: "/settings",
+      icon: Settings2,
     },
   ],
 }
@@ -141,7 +141,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <TeamSwitcher teams={data.teams} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        {/* <NavMain items={data.navMain} /> */}
         <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>

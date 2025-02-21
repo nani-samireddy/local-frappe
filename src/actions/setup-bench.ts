@@ -9,7 +9,6 @@ import {
   writeTextFile,
   copyFile,
 } from "@tauri-apps/plugin-fs";
-// import { message } from "@tauri-apps/plugin-dialog";
 
 async function runCommand(cmd: string, args: string[], step: string) {
   try {
@@ -28,17 +27,6 @@ async function runCommand(cmd: string, args: string[], step: string) {
   }
 }
 
-// Function to check if a port is available
-async function getUnusedPorts(): Promise<number[]> {
-  const result = await Command.create("exec-sh", [
-    "-c",
-    "bash -c \"comm -23 <(seq 1024 65535 | sort -n) <(lsof -i -P -n | awk 'NR>1 {print $9}' | awk -F: '{print $NF}' | grep -E '^[0-9]+$' | sort -n)\"",
-  ]).execute();
-  return result.stdout
-    .split("\n")
-    .map(Number)
-    .filter((n) => !isNaN(n));
-}
 
 async function setupBench(projectName: string, setProgressState: any) {
   const home = await homeDir(); // Get the home directory from Tauri API
@@ -52,15 +40,20 @@ async function setupBench(projectName: string, setProgressState: any) {
     numberOfPorts: 13,
   });
 
-  console.log("Unused ports", unused_ports);
-
   const [frappePortStart, frappeAltPortStart, dbViewerPort] = [
     unused_ports[0],
     unused_ports[6],
     unused_ports[12],
   ];
-  messageCallback(
-    (message: string) => message + "<br/>Got available ports for services✅ Frappe Port: " + frappePortStart + " Frappe Alt Port: " + frappeAltPortStart + " DB Viewer Port: " + dbViewerPort
+  setProgressState(
+    (message: string) =>
+      message +
+      "<br/>Got available ports for services✅ Frappe Port: " +
+      frappePortStart +
+      " Frappe Alt Port: " +
+      frappeAltPortStart +
+      " DB Viewer Port: " +
+      dbViewerPort
   );
   const frappePortEnd = frappePortStart + 5;
   const frappeAltPortEnd = frappeAltPortStart + 5;
@@ -68,20 +61,20 @@ async function setupBench(projectName: string, setProgressState: any) {
   // Create source directory
   await mkdir(`${projectDir}/source`, { recursive: true });
   // Append the message to the callback
-  messageCallback(
+  setProgressState(
     (message: string) =>
       message + "<br/>created source directory at " + projectDir + "/source✅"
   );
   // Create logs directory
   await mkdir(`${projectDir}/logs`, { recursive: true });
-  messageCallback(
+  setProgressState(
     (message: string) =>
       message + "<br/>created logs directory at " + projectDir + "/logs✅"
   );
 
   // Create bench.log file
   await create(`${projectDir}/logs/bench.log`);
-  messageCallback(
+  setProgressState(
     (message: string) =>
       message +
       "<br/>created bench.log file at " +
@@ -104,7 +97,7 @@ async function setupBench(projectName: string, setProgressState: any) {
     `${projectDir}/docker-compose.yaml`,
     updatedDockerCompose
   );
-  messageCallback(
+  setProgressState(
     (message: string) =>
       message +
       "<br/>created updated docker-compose file at " +
@@ -118,7 +111,7 @@ async function setupBench(projectName: string, setProgressState: any) {
     `${projectDir}/source/installer.py`,
     { fromPathBaseDir: BaseDirectory.Resource }
   );
-  messageCallback(
+  setProgressState(
     (message: string) =>
       message +
       "<br/>copied installer script to source directory at " +
@@ -150,7 +143,7 @@ async function setupBench(projectName: string, setProgressState: any) {
     ["-f", `docker-compose.yaml`, "up", "-d"],
     "Starting Docker Compose"
   );
-  messageCallback(
+  setProgressState(
     (message: string) => message + "<br/>Started Docker Compose✅"
   );
 
@@ -180,7 +173,7 @@ async function setupBench(projectName: string, setProgressState: any) {
     ["exec", "-i", containerId, "./installer.py"],
     "Running installer script"
   );
-  messageCallback(
+  setProgressState(
     (message: string) => message + "<br/>Ran installer script✅"
   );
 }
