@@ -10,18 +10,16 @@ import {
   copyFile,
 } from "@tauri-apps/plugin-fs";
 
-async function runCommand(cmd: string, args: string[], step: string) {
+export async function runCommand(cmd: string, args: string[], step: string) {
   try {
     const result = await Command.create("exec-sh", [
       "-c",
       `${cmd} ${args.join(" ")}`,
     ]).execute();
-
-    console.log(`${step} completed with output:`, result.stdout);
-
-    if (result.code !== 0) {
+    if (!result.code) {
       console.error(`Error in step: ${step}\n${result.stderr}`);
     }
+    return result;
   } catch (error) {
     console.error(`Failed to execute ${step}:`, error);
   }

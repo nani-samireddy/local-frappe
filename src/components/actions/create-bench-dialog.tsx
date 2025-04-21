@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { PlusCircle } from "lucide-react";
 import { useState } from "react";
 
 
@@ -36,7 +37,7 @@ export function CreateBenchDialog() {
     setIsCustomSiteName(true);
   };
 
-  const handleOnClick = async(e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleOnClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     console.log(benchName, siteName);
     await setupBench(benchName, setProgressState);
@@ -45,7 +46,10 @@ export function CreateBenchDialog() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button>New Bench</Button>
+        <Button className="w-fit">
+          <PlusCircle className="w-4 h-4" />
+          <span>Add Bench</span>
+        </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
@@ -59,7 +63,7 @@ export function CreateBenchDialog() {
             <Label htmlFor="name" className="text-right">
               Name
             </Label>
-            <Input id="name" placeholder="My new awesome project" className="col-span-3" value={benchName} onChange={handleBenchNameChange}/>
+            <Input id="name" placeholder="My new awesome project" className="col-span-3" value={benchName} onChange={handleBenchNameChange} />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="sitename" className="text-right">
@@ -68,7 +72,7 @@ export function CreateBenchDialog() {
             <Input id="sitename" placeholder="myawesomeproject.local" className="col-span-3" value={siteName} onChange={handleSiteNameChange} />
           </div>
         </div>
-        
+
         <DialogFooter>
           <Button onClick={handleOnClick}>Create</Button>
         </DialogFooter>
