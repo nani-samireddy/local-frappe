@@ -1,4 +1,4 @@
-import { exists, readDir } from "@tauri-apps/plugin-fs";
+import { readDir } from "@tauri-apps/plugin-fs";
 import { homeDir } from "@tauri-apps/api/path";
 
 export type BenchDetails = {

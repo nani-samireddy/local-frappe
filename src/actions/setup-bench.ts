@@ -80,7 +80,7 @@ async function setupBench({
 	const baseDir = `${home}/benches`;
 	const projectDir = `${baseDir}/${projectName}`;
 	const dockerComposePath = `${projectDir}/docker-compose.yaml`;
-	const devContainerPath = `${projectDir}/.devcontainer/.devcontainer.json`;
+	const devContainerPath = `${projectDir}/.devcontainer/devcontainer.json`;
 
 	setProgressState((msg) => `${msg}<br/>Setting up bench: ${projectName}...`);
 
