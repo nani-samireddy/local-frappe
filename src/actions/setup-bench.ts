@@ -1,179 +1,192 @@
 import { Command } from "@tauri-apps/plugin-shell";
 import { homeDir } from "@tauri-apps/api/path";
-import { invoke } from "@tauri-apps/api/core";
 import {
-  mkdir,
-  BaseDirectory,
-  create,
-  readTextFile,
-  writeTextFile,
-  copyFile,
+	mkdir,
+	BaseDirectory,
+	readTextFile,
+	writeTextFile,
+	copyFile,
 } from "@tauri-apps/plugin-fs";
 
-export async function runCommand(cmd: string, args: string[], step: string) {
-  try {
-    const result = await Command.create("exec-sh", [
-      "-c",
-      `${cmd} ${args.join(" ")}`,
-    ]).execute();
-    if (!result.code) {
-      console.error(`Error in step: ${step}\n${result.stderr}`);
-    }
-    return result;
-  } catch (error) {
-    console.error(`Failed to execute ${step}:`, error);
-  }
+
+export async function streamInstallerLogs(
+	containerId: string,
+	siteName: string,
+	setProgressState: (update: (prev: string) => string) => void
+): Promise<void> {
+	const step = "Running installer.py";
+
+	const child: any = await Command.create("exec-sh", [
+		"-c",
+		`docker exec -i ${containerId} bash -c "python3 installer.py -b source --site-name ${siteName} 2>&1 | tee install.log"`
+	]).spawn();
+
+	child.stdout.on("data", (data: Uint8Array) => {
+		const line = new TextDecoder().decode(data).trim();
+		console.log(`[${step}] ${line}`);
+		setProgressState((prev) => `${prev}<br/>[stdout] ${line}`);
+	});
+
+	child.stderr.on("data", (data: Uint8Array) => {
+		const line = new TextDecoder().decode(data).trim();
+		console.error(`[${step} error] ${line}`);
+		setProgressState((prev) => `${prev}<br/>[stderr] ${line}`);
+	});
+
+	await child;
 }
 
 
-async function setupBench(projectName: string, setProgressState: any) {
-  const home = await homeDir(); // Get the home directory from Tauri API
-  const baseDir = `${home}/benches`; // Correctly build the path
-  const projectDir = `${baseDir}/${projectName}`;
+export async function runCommand(
+	cmd: string,
+	args: string[],
+	step: string
+): Promise<string> {
+	try {
+		const result = await Command.create("exec-sh", [
+			"-c",
+			`${cmd} ${args.join(" ")}`,
+		]).execute();
 
-  const sourceDockerCompose = "template-files/docker-compose.yaml";
+		if (result.code !== 0) {
+			console.error(`Error during "${step}":\n${result.stderr}`);
+			throw new Error(result.stderr || `Failed at step: ${step}`);
+		}
 
-  const unused_ports: number[] = await invoke("find_unused_ports", {
-    startPort: 8000,
-    numberOfPorts: 13,
-  });
+		return result.stdout;
+	} catch (error) {
+		console.error(`Command failed at step "${step}":`, error);
+		throw error;
+	}
+}
 
-  const [frappePortStart, frappeAltPortStart, dbViewerPort] = [
-    unused_ports[0],
-    unused_ports[6],
-    unused_ports[12],
-  ];
-  setProgressState(
-    (message: string) =>
-      message +
-      "<br/>Got available ports for services✅ Frappe Port: " +
-      frappePortStart +
-      " Frappe Alt Port: " +
-      frappeAltPortStart +
-      " DB Viewer Port: " +
-      dbViewerPort
-  );
-  const frappePortEnd = frappePortStart + 5;
-  const frappeAltPortEnd = frappeAltPortStart + 5;
+interface SetupBenchArgs {
+	benchName: string;
+	siteName: string;
+	setProgressState: (update: (prev: string) => string) => void;
+}
 
-  // Create source directory
-  await mkdir(`${projectDir}/source`, { recursive: true });
-  // Append the message to the callback
-  setProgressState(
-    (message: string) =>
-      message + "<br/>created source directory at " + projectDir + "/source✅"
-  );
-  // Create logs directory
-  await mkdir(`${projectDir}/logs`, { recursive: true });
-  setProgressState(
-    (message: string) =>
-      message + "<br/>created logs directory at " + projectDir + "/logs✅"
-  );
+async function setupBench({
+	benchName,
+	siteName,
+	setProgressState,
+}: SetupBenchArgs) {
+	if (!benchName || !siteName) {
+		throw new Error("Bench name and site name are required.");
+	}
 
-  // Create bench.log file
-  await create(`${projectDir}/logs/bench.log`);
-  setProgressState(
-    (message: string) =>
-      message +
-      "<br/>created bench.log file at " +
-      projectDir +
-      "/logs/bench.log✅"
-  );
+	const projectName = benchName.replace(/\s+/g, "-").toLowerCase();
+	const home = await homeDir();
+	const baseDir = `${home}/benches`;
+	const projectDir = `${baseDir}/${projectName}`;
+	const dockerComposePath = `${projectDir}/docker-compose.yaml`;
+	const devContainerPath = `${projectDir}/.devcontainer/.devcontainer.json`;
 
-  // Read the contents of the docker-compose file.
-  const dockerCompose = await readTextFile(sourceDockerCompose, {
-    baseDir: BaseDirectory.Resource,
-  });
-  // Update the contents of the docker-compose file.
-  const updatedDockerCompose = dockerCompose.replace(
-    /project_name/g,
-    projectName
-  );
+	setProgressState((msg) => `${msg}<br/>Setting up bench: ${projectName}...`);
 
-  // Create the updated docker-compose file.
-  await writeTextFile(
-    `${projectDir}/docker-compose.yaml`,
-    updatedDockerCompose
-  );
-  setProgressState(
-    (message: string) =>
-      message +
-      "<br/>created updated docker-compose file at " +
-      projectDir +
-      `/docker-compose.yaml✅`
-  );
+	// 1. Ensure base and project directories exist
+	await mkdir(baseDir, { recursive: true });
+	setProgressState(
+		(msg) => `${msg}<br/>Created benches directory at ${baseDir} ✅`
+	);
 
-  // Copy the installer script to the source directory
-  await copyFile(
-    "template-files/installer.py",
-    `${projectDir}/source/installer.py`,
-    { fromPathBaseDir: BaseDirectory.Resource }
-  );
-  setProgressState(
-    (message: string) =>
-      message +
-      "<br/>copied installer script to source directory at " +
-      projectDir +
-      "/source/installer.py✅"
-  );
+	await mkdir(projectDir, { recursive: true });
+	setProgressState(
+		(msg) => `${msg}<br/>Created project directory at ${projectDir} ✅`
+	);
 
-  // Update the installer script file permissions
-  await runCommand(
-    "chmod",
-    ["+x", `${projectDir}/source/installer.py`],
-    "Making installer script executable"
-  );
+	// 2. Prepare docker-compose.yaml
+	const dockerComposeTemplate = await readTextFile(
+		"template-files/docker-compose.yaml",
+		{
+			baseDir: BaseDirectory.Resource,
+		}
+	);
+	const dockerComposeContent = dockerComposeTemplate.replace(
+		/project_name/g,
+		projectName
+	);
+	await writeTextFile(dockerComposePath, dockerComposeContent);
+	setProgressState((msg) => `${msg}<br/>Wrote docker-compose.yaml ✅`);
 
-  const envVars = {
-    FRAPPE_PORT_START: frappePortStart.toString(),
-    FRAPPE_PORT_END: frappePortEnd.toString(),
-    FRAPPE_ALT_PORT_START: frappeAltPortStart.toString(),
-    FRAPPE_ALT_PORT_END: frappeAltPortEnd.toString(),
-    DB_VIEWER_PORT: dbViewerPort.toString(),
-  };
+	// 3. Create .devcontainer config
+	await mkdir(`${projectDir}/.devcontainer`, { recursive: true });
+	const devContainerTemplate = await readTextFile(
+		"template-files/devcontainer/devcontainer.json",
+		{
+			baseDir: BaseDirectory.Resource,
+		}
+	);
+	const devContainerContent = devContainerTemplate.replace(
+		/project_name/g,
+		projectName
+	);
+	await writeTextFile(devContainerPath, devContainerContent);
+	setProgressState((msg) => `${msg}<br/>Configured .devcontainer ✅`);
 
-  const envString = Object.entries(envVars)
-    .map(([key, value]) => `${key}=${value}`)
-    .join(" ");
+	// 4. Copy installer.py and apps.json
+	await copyFile(
+		"template-files/installer.py",
+		`${projectDir}/installer.py`,
+		{
+			fromPathBaseDir: BaseDirectory.Resource,
+		}
+	);
+	// await copyFile("template-files/apps.json", `${projectDir}/apps.json`, {
+	// 	fromPathBaseDir: BaseDirectory.Resource,
+	// });
+	setProgressState((msg) => `${msg}<br/>Copied installer files ✅`);
 
-  await runCommand(
-    `cd ${projectDir} && ${envString} docker-compose`,
-    ["-f", `docker-compose.yaml`, "up", "-d"],
-    "Starting Docker Compose"
-  );
-  setProgressState(
-    (message: string) => message + "<br/>Started Docker Compose✅"
-  );
+	// 5. Start Docker Compose
+	await runCommand(
+		`cd ${projectDir} && docker-compose`,
+		["-f", "docker-compose.yaml", "up", "-d"],
+		"Starting Docker Compose"
+	);
+	setProgressState((msg) => `${msg}<br/>Started Docker Compose ✅`);
 
-  // Wait for container to start
-  const frappeContainerName = `${projectName}-frappe-1`.toLowerCase();
+	// 6. Wait for frappe container to be running
+	const containerName = `${projectName}-frappe-1`;
+	let isRunning = false;
 
-  let isRunning = false;
-  while (!isRunning) {
-    const inspectResult = await Command.create("exec-sh", [
-      "-c",
-      `docker inspect -f '{{.State.Running}}' ${frappeContainerName}`,
-    ]).execute();
-    isRunning = inspectResult.stdout.trim() === "true";
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-  }
+	setProgressState(
+		(msg) => `${msg}<br/>Waiting for ${containerName} to be ready...`
+	);
 
-  // Get container ID
-  const containerIdResult = await Command.create("exec-sh", [
-    "-c",
-    `docker ps -aqf "name=${frappeContainerName}"`,
-  ]).execute();
-  const containerId = containerIdResult.stdout.trim();
+	while (!isRunning) {
+		const inspectResult = await Command.create("exec-sh", [
+			"-c",
+			`docker inspect -f '{{.State.Running}}' ${containerName}`,
+		]).execute();
 
-  // Run installer script inside the container
-  await runCommand(
-    "docker",
-    ["exec", "-i", containerId, "./installer.py"],
-    "Running installer script"
-  );
-  setProgressState(
-    (message: string) => message + "<br/>Ran installer script✅"
-  );
+		isRunning = inspectResult.stdout.trim() === "true";
+		if (!isRunning) await new Promise((res) => setTimeout(res, 1000));
+	}
+
+	// 7. Get container ID and run installer
+	const containerIdResult = await Command.create("exec-sh", [
+		"-c",
+		`docker ps -aqf "name=${containerName}"`,
+	]).execute();
+	const containerId = containerIdResult.stdout.trim();
+
+	await runCommand(
+		"docker",
+		[
+			"exec",
+			"-i",
+			containerId,
+			"python3",
+			"installer.py",
+			"-b",
+			"source",
+			"--site-name",
+			siteName,
+		],
+		"Running installer.py"
+	);
+
+	setProgressState((msg) => `${msg}<br/>Ran installer script ✅`);
 }
 
 export { setupBench };
