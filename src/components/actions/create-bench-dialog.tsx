@@ -1,82 +1,105 @@
 import { setupBench } from "@/actions/setup-bench";
 import { Button } from "@/components/ui/button"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { PlusCircle } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 
 export function CreateBenchDialog() {
-  const [benchName, setBenchName] = useState<string>("");
-  const [siteName, setSiteName] = useState<string>("");
-  const [isCustomSiteName, setIsCustomSiteName] = useState<boolean>(false);
-  const [progressState, setProgressState] = useState<string>("Creating Bench...");
-  const [isCreating, setIsCreating] = useState<boolean>(false);
+	const [benchName, setBenchName] = useState<string>("");
+	const [siteName, setSiteName] = useState<string>("");
+	const [isCustomSiteName, setIsCustomSiteName] = useState<boolean>(false);
+	const [progressState, setProgressState] = useState<string>("Creating Bench...");
+	const [isCreating, setIsCreating] = useState<boolean>(false);
 
-  const handleBenchNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setBenchName(e.target.value);
-    if (e.target.value) {
-      // If site name is not set, set it to the bench name .local
-      if (!isCustomSiteName) {
-        setSiteName(e.target.value.replace(/\s+/g, "-").toLowerCase() + ".local");
-      }
-    }
-  };
+	const handleBenchNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setBenchName(e.target.value);
+		if (e.target.value) {
+			// If site name is not set, set it to the bench name .local
+			if (!isCustomSiteName) {
+				setSiteName(e.target.value.replace(/\s+/g, "-").toLowerCase() + ".local");
+			}
+		}
+	};
 
-  const handleSiteNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSiteName(e.target.value);
-    setIsCustomSiteName(true);
-  };
+	const handleSiteNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setSiteName(e.target.value);
+		setIsCustomSiteName(true);
+	};
 
-  const handleOnClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    console.log(benchName, siteName);
-    await setupBench(benchName, setProgressState);
-  };
+	const handleOnClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
+		e.preventDefault();
+		console.log(benchName, siteName);
+		if (!benchName || !siteName) {
+			alert("Please provide both bench name and site name.");
+			return;
+		}
+		setIsCreating(true);
+		setProgressState("Creating Bench...");
+		try {
+			await setupBench({ benchName, siteName, setProgressState });
+			setProgressState("Bench created successfully!");
+		} catch (error) {
+			console.error("Error creating bench:", error);
+			setProgressState("Failed to create bench. Please try again.");
+		} finally {
+			toast("Bench created Successfully!");
+			setIsCreating(false);
+		}
+	};
 
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button className="w-fit">
-          <PlusCircle className="w-4 h-4" />
-          <span>Add Bench</span>
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Create Bench</DialogTitle>
-          <DialogDescription>
-            Create a new bench to start developing your project.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">
-              Name
-            </Label>
-            <Input id="name" placeholder="My new awesome project" className="col-span-3" value={benchName} onChange={handleBenchNameChange} />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="sitename" className="text-right">
-              Site Name
-            </Label>
-            <Input id="sitename" placeholder="myawesomeproject.local" className="col-span-3" value={siteName} onChange={handleSiteNameChange} />
-          </div>
-        </div>
+	return (
+		<Dialog>
+			<DialogTrigger asChild>
+				<Button className="w-fit text-xs cursor-pointer">
+					<PlusCircle className="w-4 h-4" />
+					<span className="">Create Bench</span>
+				</Button>
+			</DialogTrigger>
+			<DialogContent className="sm:max-w-[425px]">
+				<DialogHeader>
+					<DialogTitle>Create Bench</DialogTitle>
+					<DialogDescription>
+						Create a new bench to start developing your project.
+					</DialogDescription>
+				</DialogHeader>
+				<div className="grid gap-4 py-4">
+					<div className="grid grid-cols-4 items-center gap-4">
+						<Label htmlFor="name" className="text-right">
+							Name
+						</Label>
+						<Input id="name" placeholder="My new awesome project" className="col-span-3" value={benchName} onChange={handleBenchNameChange} />
+					</div>
+					<div className="grid grid-cols-4 items-center gap-4">
+						<Label htmlFor="sitename" className="text-right">
+							Site Name
+						</Label>
+						<Input id="sitename" placeholder="myawesomeproject.local" className="col-span-3" value={siteName} onChange={handleSiteNameChange} />
+					</div>
+					{
+						isCreating && (
+							<div className="text-sm text-gray-500">
+								<p>{progressState}</p>
+							</div>
+						)
+					}
+				</div>
 
-        <DialogFooter>
-          <Button onClick={handleOnClick}>Create</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
+				<DialogFooter>
+					<Button onClick={handleOnClick}>Create</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	)
 }

@@ -31,19 +31,18 @@ def main():
     args = parser.parse_args()
     init_bench_if_not_exist(args)
     create_site_in_bench(args)
-    
 
 
 def get_args_parser():
     parser = argparse.ArgumentParser()
-    # parser.add_argument(
-    #     "-j",
-    #     "--apps-json",
-    #     action="store",
-    #     type=str,
-    #     help="Path to apps.json, default: apps-example.json",
-    #     default="apps-example.json",
-    # )  # noqa: E501
+    parser.add_argument(
+        "-j",
+        "--apps-json",
+        action="store",
+        type=str,
+        help="Path to apps.json, default: apps-example.json",
+        default="apps-example.json",
+    )  # noqa: E501
     parser.add_argument(
         "-b",
         "--bench-name",
@@ -135,7 +134,7 @@ def init_bench_if_not_exist(args):
         init_command += "--verbose " if args.verbose else " "
         init_command += f"--frappe-path={args.frappe_repo} "
         init_command += f"--frappe-branch={args.frappe_branch} "
-        # init_command += f"--apps_path={args.apps_json} "
+        init_command += f"--apps_path={args.apps_json} "
         init_command += args.bench_name
         command = [
             "/bin/bash",
@@ -208,9 +207,10 @@ def create_site_in_bench(args):
         new_site_cmd = [
             "bench",
             "new-site",
+            f"--db-root-username=root",
             f"--db-host=mariadb",  # Should match the compose service name
             f"--db-type={args.db_type}",  # Add the selected database type
-            f"--no-mariadb-socket",
+            f"--mariadb-user-host-login-scope=%",
             f"--db-root-password=123",  # Replace with your MariaDB password
             f"--admin-password={args.admin_password}",
         ]
@@ -223,6 +223,7 @@ def create_site_in_bench(args):
         new_site_cmd = [
             "bench",
             "new-site",
+            f"--db-root-username=root",
             f"--db-host=postgresql",  # Should match the compose service name
             f"--db-type={args.db_type}",  # Add the selected database type
             f"--db-root-password=123",  # Replace with your PostgreSQL password

@@ -1,3 +1,4 @@
+version: "3.7"
 services:
   mariadb:
     image: docker.io/mariadb:10.6
@@ -50,7 +51,7 @@ services:
     environment:
       - SHELL=/bin/bash
     volumes:
-      - .:/workspace/development:cached
+      - ..:/workspace:cached
       # Enable if you require git cloning
       # - ${HOME}/.ssh:/home/frappe/.ssh
     working_dir: /workspace/development

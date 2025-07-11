@@ -2,7 +2,6 @@ import { homeDir } from "@tauri-apps/api/path";
 import { readDir, readTextFile } from "@tauri-apps/plugin-fs";
 import { BenchInformation } from "./types";
 import { runCommand } from "./setup-bench";
-import { readFile } from "fs";
 
 /**
  * Get the list of folders in a directory
